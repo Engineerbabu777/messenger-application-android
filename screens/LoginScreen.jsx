@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
@@ -17,15 +18,42 @@ const LoginScreen = () => {
 
 	const navigation = useNavigation();
 
+	useEffect(()=> {
+     const checkLoginStatus = async () => {
+		try{
+			const token = AsyncStorage.getItem("authToken");
+			if(token){
+				navigation.navigate('Home');
+			}else{
+				// SHOW THE LOGIN SCREEN!
+			}
+		} catch(err) {
+			console.log('LOGIN ERROR-> ',err);
+		}
+	 }
+	 checkLoginStatus();
+	},[]);
+
 	// LOGIN FUNCTION!
 	const loginHandler = async() => {
 		const user = {
 			email,password,
 		}
 
-		// MAKE A POST REQUEST!
-		const response = await axios.post('http://192.168.199.2:8080/login',user);
+		console.log('USER',user);
+
 		
+		// MAKE A POST REQUEST!
+		const response = await axios.post('http://192.168.103.155:8080/login',user);
+		const {token} = response.data;
+
+		console.log('RESPONSE-> ',response);
+		console.log('TOKEN-> ',token);
+		console.log('DATA-> ',response.data)
+
+	    AsyncStorage.setItem("authToken", token);
+
+		navigation.navigate("Home");
 
 	}
 
@@ -60,7 +88,7 @@ const LoginScreen = () => {
 						</Text>
 						<TextInput
 							value={email}
-							onChange={(text) => setEmail(text)}
+							onChangeText={(text) => setEmail(text)}
 							placeholder="Enter Your Email"
 							style={{
 								borderBottomWidth: 1,
@@ -78,7 +106,7 @@ const LoginScreen = () => {
 						<TextInput
 							secureTextEntry
 							value={password}
-							onChange={(password) => setPassword(password)}
+							onChangeText={(password) => setPassword(password)}
 							placeholder="Enter Your Password"
 							style={{
 								borderBottomWidth: 1,

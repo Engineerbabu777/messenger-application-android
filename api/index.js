@@ -37,6 +37,7 @@ const createToken = (userId) => {
 	// GENERATE TOKEN WITH A SECRET-KEY!
 	const token = jwt.sign(payload, "123456789awais", { expiresIn: "1hr" });
 
+
 	return token;
 };
 
@@ -67,8 +68,10 @@ app.post("/register", async (req, res) => {
 app.post("/login", async (req, res) => {
 	try {
 		const { password, email } = req.body;
+
+		console.log(password, email);
 		// CHECK IF EMAIL AND PASSWORD IS NULL!
-		if ((!password, !email)) {
+		if ((!password || !email)) {
 			res.status(404).json({ message: "email and password required!" });
 		}
 		// FIND USER IN DATABASE!
@@ -93,6 +96,20 @@ app.post("/login", async (req, res) => {
 		console.log("Error: ", err);
 		res.status(500).json({ message: "Internal server error" });
 	}
+});
+
+// GET ALL USERS EXCEPT LOGGED-IN USER!
+app.get("/users/:userId", async(req,res) => {
+	try{
+		const loggedInUser = req.params.userId;
+
+	  const userDocs = await User.find({ _id: { $ne: loggedInUser } });
+	  res.status(200).json({ userDocs, success:true});
+	} catch(error) {
+		console.log(error);
+		res.status(500).json({ error:true,message: "Internal server error" });
+	}
+      
 });
 
 // LISTEN THE APP ON THE PRT 8080!
