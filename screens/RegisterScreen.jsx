@@ -32,12 +32,12 @@ const RegisterScreen = () => {
 
 		// MAKE A POST REQUEST!
 		const response = await axios.post(
-			"http://192.168.103.155:8080/register",
+			"http://192.168.103.77:8080/register",
 			user
 		);
 		// response.then(({data}) => {
 		if (response?.data?.success) {
-			console.log(data);
+			// console.log(data);
 			Alert.alert(
 				"Registration Successful",
 				"You have been registered successfully"

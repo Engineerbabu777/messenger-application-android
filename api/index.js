@@ -37,7 +37,6 @@ const createToken = (userId) => {
 	// GENERATE TOKEN WITH A SECRET-KEY!
 	const token = jwt.sign(payload, "123456789awais", { expiresIn: "1hr" });
 
-
 	return token;
 };
 
@@ -71,7 +70,7 @@ app.post("/login", async (req, res) => {
 
 		console.log(password, email);
 		// CHECK IF EMAIL AND PASSWORD IS NULL!
-		if ((!password || !email)) {
+		if (!password || !email) {
 			res.status(404).json({ message: "email and password required!" });
 		}
 		// FIND USER IN DATABASE!
@@ -99,17 +98,102 @@ app.post("/login", async (req, res) => {
 });
 
 // GET ALL USERS EXCEPT LOGGED-IN USER!
-app.get("/users/:userId", async(req,res) => {
-	try{
+app.get("/users/:userId", async (req, res) => {
+	try {
 		const loggedInUser = req.params.userId;
 
-	  const userDocs = await User.find({ _id: { $ne: loggedInUser } });
-	  res.status(200).json({ userDocs, success:true});
-	} catch(error) {
+		const userDocs = await User.find({ _id: { $ne: loggedInUser } });
+		res.status(200).json({ userDocs, success: true });
+	} catch (error) {
 		console.log(error);
-		res.status(500).json({ error:true,message: "Internal server error" });
+		res.status(500).json({ error: true, message: "Internal server error" });
 	}
-      
+});
+
+// SEND A REQUEST TO USER!
+app.post("/send-request", async (req, res) => {
+	try {
+		const { currentUserId, selectedUserId } = req.body;
+
+		// SAVING IN SENDER!
+		await User.findByIdAndUpdate(selectedUserId, {
+			$push: { friendRequests: currentUserId },
+		});
+
+		// SAVING IN SENT-REQUEST_ID!
+		await User.findByIdAndUpdate(currentUserId, {
+			$push: { setRequests: selectedUserId },
+		});
+
+		// SENDING RESPONSE!
+		res.status(200).json({ success: true });
+	} catch (err) {
+		res.status(504).json({ error: true });
+	}
+});
+
+// GET ALL FRIENDS REQUESTS FOR PARTICULAR USER !!
+app.get("/friend-requests/:userId", async (req, res) => {
+	try {
+		const userId = req.params.userId;
+
+		// console.log('currentUser-> ',userId)
+
+		const Doc = await User.findById(userId)
+			.populate("friendRequests", "name email image")
+			.exec();
+		res.status(200).json({
+			friendRequests: Doc.friendRequests,
+			success: true,
+			message: "init",
+		});
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ error: true, message: "Internal server error" });
+	}
+});
+
+// ACCEPT REQUEST !
+app.post("/accept-request/accept", async (req, res) => {
+	try {
+		const { userId, acceptId } = req.body;
+
+		// const userDoc = await User.findByIdAndUpdate(userId, {
+		// 	$push: { friends: acceptId },
+		// 	$pull: { setRequests: acceptId },
+		// });
+		// const acceptDoc = await User.findByIdAndUpdate(acceptId, {
+		// 	$push: { friends: userId },
+		// 	$pull: { friendRequests: userId },
+		// });
+
+		const userDoc = await User.findById(userId);
+		const friendDoc = await User.findById(acceptId);
+
+
+		userDoc.friends.push(acceptId);
+		friendDoc.friends.push(userId);
+
+		userDoc.friendRequests = userDoc.friendRequests.filter(
+			(f, i) => f.toString() !== acceptId.toString()
+		);
+		friendDoc.setRequests = friendDoc.setRequests.filter(
+			(f, i) => f.toString() !== userId.toString()
+		);
+
+		userDoc.save();
+		friendDoc.save();
+
+		res.status(200).json({
+			userDoc,
+			friendDoc,
+			success: true,
+			message: "Request accepted",
+		});
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ error: true, message: "Internal server error" });
+	}
 });
 
 // LISTEN THE APP ON THE PRT 8080!

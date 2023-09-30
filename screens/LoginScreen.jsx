@@ -18,21 +18,21 @@ const LoginScreen = () => {
 
 	const navigation = useNavigation();
 
-	useEffect(()=> {
-     const checkLoginStatus = async () => {
-		try{
-			const token = AsyncStorage.getItem("authToken");
-			if(token){
-				navigation.navigate('Home');
-			}else{
-				// SHOW THE LOGIN SCREEN!
-			}
-		} catch(err) {
-			console.log('LOGIN ERROR-> ',err);
-		}
-	 }
-	 checkLoginStatus();
-	},[]);
+	// useEffect(()=> {
+    //  const checkLoginStatus = async () => {
+	// 	try{
+	// 		const token = AsyncStorage.getItem("authToken");
+	// 		if(token){
+	// 			navigation.navigate('Home');
+	// 		}else{
+	// 			// SHOW THE LOGIN SCREEN!
+	// 		}
+	// 	} catch(err) {
+	// 		console.log('LOGIN ERROR-> ',err);
+	// 	}
+	//  }
+	//  checkLoginStatus();
+	// },[]);
 
 	// LOGIN FUNCTION!
 	const loginHandler = async() => {
@@ -44,7 +44,7 @@ const LoginScreen = () => {
 
 		
 		// MAKE A POST REQUEST!
-		const response = await axios.post('http://192.168.103.155:8080/login',user);
+		const response = await axios.post('http://192.168.103.77:8080/login',user);
 		const {token} = response.data;
 
 		console.log('RESPONSE-> ',response);
