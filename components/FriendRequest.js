@@ -14,7 +14,7 @@ export default function FriendRequest({
 
 	const handleRequest = async () => {
 		const response = await axios.post(
-			"http://192.168.103.77:8080/accept-request/accept",
+			"http://192.168.99.146:8080/accept-request/accept",
 			{
 				userId,
 				acceptId: item._id,

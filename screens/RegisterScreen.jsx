@@ -32,7 +32,7 @@ const RegisterScreen = () => {
 
 		// MAKE A POST REQUEST!
 		const response = await axios.post(
-			"http://192.168.103.77:8080/register",
+			"http://192.168.99.146:8080/register",
 			user
 		);
 		// response.then(({data}) => {

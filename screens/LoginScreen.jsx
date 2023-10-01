@@ -44,7 +44,7 @@ const LoginScreen = () => {
 
 		
 		// MAKE A POST REQUEST!
-		const response = await axios.post('http://192.168.103.77:8080/login',user);
+		const response = await axios.post("http://192.168.99.146:8080/login",user);
 		const {token} = response.data;
 
 		console.log('RESPONSE-> ',response);

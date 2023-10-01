@@ -14,7 +14,7 @@ const Schema = new mongoose.Schema(
 			type: String,
 			enum: ["text", "image"],
 		},
-		message: String,
+		messageText: String,
 		imageUrl: String,
 	},
 	{

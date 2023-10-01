@@ -10,7 +10,7 @@ export default function User({ user }) {
 
         try{
             const response = await axios.post(
-                "http://192.168.103.77:8080/send-request",
+                "http://192.168.99.146:8080/send-request",
                 { selectedUserId, currentUserId: userId }
             );
 

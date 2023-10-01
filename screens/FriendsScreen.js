@@ -15,7 +15,7 @@ export default function FriendsScreen() {
 			try {
 				console.log("USERID-> ", userId);
 				const response = await axios.get(
-					"http://192.168.103.77:8080/friend-requests/" + userId
+					`http://192.168.99.146:8080/friend-requests/` + userId
 				);
 
 				const allRequests = response.data.friendRequests.map((friend, ind) => {

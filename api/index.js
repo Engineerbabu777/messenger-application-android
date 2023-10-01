@@ -17,6 +17,23 @@ app.use(bodyParser.json());
 app.use(passport.initialize());
 const jwt = require("jsonwebtoken");
 
+// MULTER PART!
+const multer = require("multer");
+// CONFIGURE MULTER FOR HANDLING FILE UPLOADS!
+const storage = multer.diskStorage({
+	destination: function (req, file, cal) {
+		cal(null, "files/"); // SPECEIFY THE STORAGE DESTINATION!
+	},
+	filename: function (req, file, cal) {
+		// GENERATE A UNIQUE FILE NAME FOR UPLOADING FILES!
+		const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
+		cal(null, uniqueName + "-" + file.originalname);
+	},
+});
+
+const upload = multer({ storage: storage });
+
+
 // CONNECTING TO DATABASE!
 mongoose
 	.connect(
@@ -158,18 +175,8 @@ app.post("/accept-request/accept", async (req, res) => {
 	try {
 		const { userId, acceptId } = req.body;
 
-		// const userDoc = await User.findByIdAndUpdate(userId, {
-		// 	$push: { friends: acceptId },
-		// 	$pull: { setRequests: acceptId },
-		// });
-		// const acceptDoc = await User.findByIdAndUpdate(acceptId, {
-		// 	$push: { friends: userId },
-		// 	$pull: { friendRequests: userId },
-		// });
-
 		const userDoc = await User.findById(userId);
 		const friendDoc = await User.findById(acceptId);
-
 
 		userDoc.friends.push(acceptId);
 		friendDoc.friends.push(userId);
@@ -192,6 +199,84 @@ app.post("/accept-request/accept", async (req, res) => {
 		});
 	} catch (error) {
 		console.log(error);
+		res.status(500).json({ error: true, message: "Internal server error" });
+	}
+});
+
+// GET ALL FRIENDS OF USER:!
+app.get("/get-friends/:id", async (req, res) => {
+	try {
+		const currentUser = req.params.id;
+		const friends = await User.findById(currentUser).populate(
+			"friends",
+			"name email image"
+		);
+
+		const allFriends = friends.friends;
+
+		res.status(200).json({ success: true, friends: allFriends });
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ error: true, message: "Internal server error" });
+	}
+});
+
+
+// POST MESSAGE REQUEST !!
+app.post("/post-message", upload.single("file"), async (req, res) => {
+	try {
+		const { senderId, recepientId, messageText, messageType } = req.body;
+
+
+		const newMessage = new messageModel({
+			senderId,
+			recepientId,
+			messageText,
+			messageType,
+			timestamp: new Date(),
+			imageUrl: messageType === "image",
+		});
+
+		await newMessage.save(); 
+
+		res
+			.status(200)
+			.json({ success: true, message: "Message sent" });
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ error: true, message: "Internal server error" });
+	}
+});
+
+// GET USER DETAILS!
+app.get("/user/:userId", async (req, res) => {
+	try {
+		const userId = req.params.userId;
+		const user = await User.findById(userId).select("-password");
+		res.status(200).json({ success: true, recepientId: user });
+	} catch (err) {
+		console.log(err);
+		res.status(500).json({ error: true, message: "Internal server error" });
+	}
+});
+
+// RETERVE MESSAGES!!
+app.get("/messages/:senderId/:recepientId", async (req, res) => {
+	try {
+		const { senderId, recepientId } = req.params;
+
+		const messages = await messageModel
+			.find({
+				$or: [
+					{ senderId: senderId, recepientId: recepientId },
+					{ senderId: recepientId, recepientId: senderId },
+				],
+			})
+			.populate("senderId", "_id name");
+
+		res.status(200).json({ success: true, messages });
+	} catch (err) {
+		console.log(err);
 		res.status(500).json({ error: true, message: "Internal server error" });
 	}
 });
