@@ -5,6 +5,7 @@ const passport = require("passport");
 const localStrategy = require("passport-local").Strategy;
 const User = require("./models/user");
 const messageModel = require("./models/message");
+const multer = require("multer");
 
 // INITIALIZING APP!
 const app = express();
@@ -18,21 +19,19 @@ app.use(passport.initialize());
 const jwt = require("jsonwebtoken");
 
 // MULTER PART!
-const multer = require("multer");
 // CONFIGURE MULTER FOR HANDLING FILE UPLOADS!
 const storage = multer.diskStorage({
-	destination: function (req, file, cal) {
-		cal(null, "files/"); // SPECEIFY THE STORAGE DESTINATION!
+	destination: function (req, file, cb) {
+		cb(null, "files/"); // SPECEIFY THE STORAGE DESTINATION!
 	},
-	filename: function (req, file, cal) {
+	filename: function (req, file, cb) {
 		// GENERATE A UNIQUE FILE NAME FOR UPLOADING FILES!
 		const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1e9);
-		cal(null, uniqueName + "-" + file.originalname);
+		cb(null, uniqueName + "-" + file.originalname);
 	},
 });
 
 const upload = multer({ storage: storage });
-
 
 // CONNECTING TO DATABASE!
 mongoose
@@ -221,12 +220,10 @@ app.get("/get-friends/:id", async (req, res) => {
 	}
 });
 
-
 // POST MESSAGE REQUEST !!
-app.post("/post-message", upload.single("file"), async (req, res) => {
+app.post("/post-message", upload.single("imageFile"), async (req, res) => {
 	try {
 		const { senderId, recepientId, messageText, messageType } = req.body;
-
 
 		const newMessage = new messageModel({
 			senderId,
@@ -234,14 +231,12 @@ app.post("/post-message", upload.single("file"), async (req, res) => {
 			messageText,
 			messageType,
 			timestamp: new Date(),
-			imageUrl: messageType === "image",
+			imageUrl: messageType === "image" ? req.file.path : null,
 		});
 
-		await newMessage.save(); 
+		await newMessage.save();
 
-		res
-			.status(200)
-			.json({ success: true, message: "Message sent" });
+		res.status(200).json({ success: true, message: "Message sent" });
 	} catch (err) {
 		console.log(err);
 		res.status(500).json({ error: true, message: "Internal server error" });
@@ -276,6 +271,20 @@ app.get("/messages/:senderId/:recepientId", async (req, res) => {
 
 		res.status(200).json({ success: true, messages });
 	} catch (err) {
+		console.log(err);
+		res.status(500).json({ error: true, message: "Internal server error" });
+	}
+});
+
+// END POINT TO DELETE THE MESSAGE!
+app.post("/deleteMessages", async (req, res) => {
+	try {
+		const { messages } = req.body;
+		if (!Array.isArray(messages) || messages.length === 0) {
+			return res.status(400).json({ error: true, message: "Invalid messages" });
+		}
+		await messageModel.deleteMany({ _id: { $in: messages } });
+	} catch (error) {
 		console.log(err);
 		res.status(500).json({ error: true, message: "Internal server error" });
 	}

@@ -55,7 +55,7 @@ export default function HomeScreen() {
 			setUserId(userId);
 			// MAKE A REQUEST!
 			const response = await axios.get(
-				"http://192.168.99.146:8080/users/" + userId
+				"http://192.168.244.130:8080/users/" + userId
 			);
 			if (response.data.error) {
 				console.log("GETTING USERS ERROR !", response.data.message);

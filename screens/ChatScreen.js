@@ -13,7 +13,7 @@ export default function ChatScreen() {
 			try {
 				console.log("USERID-> ", userId);
 				const response = await axios.get(
-					"http://192.168.99.146:8080/get-friends/" + userId
+					"http://192.168.244.130:8080/get-friends/" + userId
 				);
 
 				const allFriends = response.data.friends.map((friend, ind) => {

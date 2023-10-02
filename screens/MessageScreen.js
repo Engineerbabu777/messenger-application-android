@@ -16,10 +16,14 @@ import { UserType } from "../UserContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { FontAwesome } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function MessageScreen() {
 	const [showEmoji, setShowEmoji] = useState(false);
 	const [selectedImage, setSelectedImage] = useState("");
+	const [selectedMessages, setSelectedMessages] = useState([]);
 	const [message, setMessage] = useState("");
 	const { userId, setUserId } = useContext(UserType);
 	const [messages, setMessages] = useState([]);
@@ -28,10 +32,24 @@ export default function MessageScreen() {
 	const navigation = useNavigation();
 	const [recepientData, setRecepientData] = useState(null);
 
+	// HANDLE SELECT MESSAGES!
+	const handleSelectMessage = (message) => {
+		// CHECK IS MESSAGE EXISTS OR NOT!
+		const selected = selectedMessages.includes(message);
+
+		// IF INCLUDES THAN REMOVE IT FROM ARRAY ELSE ADD IT TO ARRAY!
+		if (selected) {
+			setSelectedMessages(selectedMessages.filter((m) => m !== message));
+		} else {
+			setSelectedMessages([...selectedMessages, message]);
+		}
+	};
+
+	console.log("YOUR DELETED MESSAGES ARRAY-> ", selectedMessages);
 	const fetchMessages = async () => {
 		try {
 			const response = await axios.get(
-				"http://192.168.99.146:8080/messages/" + userId + "/" + recepientId
+				"http://192.168.244.130:8080/messages/" + userId + "/" + recepientId
 			);
 
 			setMessages(response.data.messages);
@@ -51,7 +69,7 @@ export default function MessageScreen() {
 		const fetchRecepientData = async () => {
 			try {
 				const response = await axios.get(
-					"http://192.168.99.146:8080/user/" + recepientId
+					"http://192.168.244.130:8080/user/" + recepientId
 				);
 
 				console.log(response.data);
@@ -91,14 +109,14 @@ export default function MessageScreen() {
 			}
 
 			const response = await axios.post(
-				"http://192.168.99.146:8080/post-message",
+				"http://192.168.244.130:8080/post-message",
 				formData
 			);
 
 			console.log("MESSAGE DATA-> ", response?.data);
 			if (response.data.success) {
 				setMessage("");
-				setSelectedImage("");
+				// setSelectedImage("");
 			}
 			fetchMessages();
 		} catch (error) {
@@ -117,28 +135,65 @@ export default function MessageScreen() {
 						size={24}
 						color="black"
 					/>
-					<View style={{ flexDirection: "row", alignItems: "center" }}>
-						<Image
-							source={{ uri: recepientData?.image }}
-							style={{
-								width: 30,
-								height: 30,
-								borderRadius: 15,
-								resizeMode: "cover",
-							}}
-						/>
-						<Text style={{ marginLeft: 5, fontSize: 15, fontWeight: "bold" }}>
-							{recepientData?.name}
-						</Text>
-					</View>
+
+					{selectedMessages.length === 0 ? (
+						<View>
+							<Text style={{ fontSize: 16, fontWeight: "600" }}>
+								{selectedMessages?.length}
+							</Text>
+						</View>
+					) : (<View style={{ flexDirection: "row", alignItems: "center" }}>
+					<Image
+						source={{ uri: recepientData?.image }}
+						style={{
+							width: 30,
+							height: 30,
+							borderRadius: 15,
+							resizeMode: "cover",
+						}}
+					/>
+					<Text style={{ marginLeft: 5, fontSize: 15, fontWeight: "bold" }}>
+						{recepientData?.name}
+					</Text>
+				</View>)}
 				</View>
+					
 			),
+			headerLeft: () =>
+				selectedMessages.length > 0 ? (
+					<>
+						<View style={{flexDirection:'row',alignItems:'center',gap:9}}>
+							<Ionicons name="md-arrow-redo-sharp" size={24} color="black" />
+							<Ionicons name="md-arrow-undo" size={24} color="black" />
+							<FontAwesome name="star" size={24} color="black" />
+							<MaterialIcons name="delete" size={24} color="black" />
+						</View>
+					</>
+				) : null,
 		});
-	}, [recepientData]);
+	}, [recepientData,selectedMessages]);
 
 	const formatTime = (time) => {
 		const options = { hours: "numeric", minutes: "numeric" };
 		return new Date(time).toLocaleTimeString("en-US", options);
+	};
+
+	// FUNCTION TO HANDLE IMAGE PICKER!
+	const imagePicker = async () => {
+		let result = await ImagePicker.launchImageLibraryAsync({
+			mediaTypes: ImagePicker.MediaTypeOptions.All,
+			allowsEditing: true,
+			aspect: [4, 3],
+			quality: 1,
+		});
+
+		console.log("OUR IMAGE ADDRESS-> ", result.assets[0].uri);
+
+		// IF IMAGE WAS NOT SELECTED!
+		if (!result.canceled) {
+			setSelectedImage(result.uri);
+			handleSendMessage("image", result.uri);
+		}
 	};
 
 	return (
@@ -147,8 +202,58 @@ export default function MessageScreen() {
 				{messages.length > 0 &&
 					messages.map((item, index) => {
 						if (item.messageType === "text") {
+							const isSelected = selectedMessages.includes(item._id);
 							return (
 								<Pressable
+									onLongPress={() => handleSelectMessage(item._id)}
+									key={index}
+									style={[
+										item?.senderId?._id === userId
+											? {
+													alignSelf: "flex-end",
+													padding: 8,
+													maxWidth: "60%",
+													borderRadius: 7,
+													margin: 10,
+													backgroundColor: "#DCF8C6",
+											  }
+											: {
+													alignSelf: "flex-start",
+													padding: 8,
+													maxWidth: "60%",
+													borderRadius: 7,
+													margin: 10,
+													backgroundColor: "white",
+											  },
+											  isSelected && {width:'100%',backgroundColor:'#F0FFFF'}
+									]}
+								>
+									<Text style={{ fontSize: 13, textAlign: isSelected ? 'right' : 'left' }}>
+										{item?.messageText}
+									</Text>
+									<Text
+										style={{
+											textAlign: "right",
+											fontSize: 9,
+											color: "gray",
+											marginTop: 5,
+										}}
+									>
+										{formatTime(item?.createdAt)}
+									</Text>
+								</Pressable>
+							);
+						}
+
+						if (item.messageType === "image") {
+							const baseUrl = "/api/files/";
+							const imageUrl = item.imageUrl;
+							const filename = imageUrl.split("/").pop();
+							const source = { uri: baseUrl + filename };
+
+							return (
+								<Pressable
+									onLongPress={() => handleSelectMessage(item._id)}
 									key={index}
 									style={[
 										item?.senderId?._id === userId
@@ -170,19 +275,25 @@ export default function MessageScreen() {
 											  },
 									]}
 								>
-									<Text style={{ fontSize: 13, textAlign: "left" }}>
-										{item?.messageText}
-									</Text>
-									<Text
-										style={{
-											textAlign: "right",
-											fontSize: 9,
-											color: "gray",
-											marginTop: 5,
-										}}
-									>
-										{formatTime(item?.createdAt)}
-									</Text>
+									<View>
+										<Image
+											source={{ uri: selectedImage }}
+											style={{ width: 200, height: 200, borderRadius: 7 }}
+										/>
+										<Text
+											style={{
+												textAlign: "right",
+												fontSize: 9,
+												color: "white",
+												position: "absolute",
+												right: 10,
+												bottom: 7,
+												marginTop: 5,
+											}}
+										>
+											{formatTime(item?.createdAt)}
+										</Text>
+									</View>
 								</Pressable>
 							);
 						}
@@ -227,7 +338,7 @@ export default function MessageScreen() {
 						marginHorizontal: 8,
 					}}
 				>
-					<Entypo name="camera" size={24} color="gray" />
+					<Entypo onPress={imagePicker} name="camera" size={24} color="gray" />
 					<Feather name="mic" size={24} color="gray" />
 				</View>
 				<Pressable
