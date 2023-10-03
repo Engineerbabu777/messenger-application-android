@@ -18,44 +18,46 @@ const LoginScreen = () => {
 
 	const navigation = useNavigation();
 
-	useEffect(()=> {
-     const checkLoginStatus = async () => {
-		try{
-			const token = AsyncStorage.getItem("authToken");
-			if(token){
-				navigation.navigate('Home');
-			}else{
-				// SHOW THE LOGIN SCREEN!
+	useEffect(() => {
+		const checkLoginStatus = async () => {
+			try {
+				const token = AsyncStorage.getItem("authToken");
+				if (token) {
+					navigation.navigate("Home");
+				} else {
+					// SHOW THE LOGIN SCREEN!
+				}
+			} catch (err) {
+				console.log("LOGIN ERROR-> ", err);
 			}
-		} catch(err) {
-			console.log('LOGIN ERROR-> ',err);
-		}
-	 }
-	 checkLoginStatus();
-	},[]);
+		};
+		checkLoginStatus();
+	}, []);
 
 	// LOGIN FUNCTION!
-	const loginHandler = async() => {
+	const loginHandler = async () => {
 		const user = {
-			email,password,
-		}
+			email,
+			password,
+		};
 
-		console.log('USER',user);
+		console.log("USER", user);
 
-		
 		// MAKE A POST REQUEST!
-		const response = await axios.post("http://192.168.244.130:8080/login",user);
-		const {token} = response.data;
+		const response = await axios.post(
+			"http://192.168.244.130:8080/login",
+			user
+		);
+		const { token } = response.data;
 
-		console.log('RESPONSE-> ',response);
-		console.log('TOKEN-> ',token);
-		console.log('DATA-> ',response.data)
+		console.log("RESPONSE-> ", response);
+		console.log("TOKEN-> ", token);
+		console.log("DATA-> ", response.data);
 
-	    AsyncStorage.setItem("authToken", token);
+		AsyncStorage.setItem("authToken", token);
 
 		navigation.navigate("Home");
-
-	}
+	};
 
 	return (
 		<View
@@ -118,7 +120,8 @@ const LoginScreen = () => {
 						/>
 					</View>
 				</View>
-				<Pressable onPress={loginHandler}
+				<Pressable
+					onPress={loginHandler}
 					style={{
 						backgroundColor: "#4A55A2",
 						width: 200,

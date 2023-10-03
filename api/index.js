@@ -280,12 +280,47 @@ app.get("/messages/:senderId/:recepientId", async (req, res) => {
 app.post("/deleteMessages", async (req, res) => {
 	try {
 		const { messages } = req.body;
+		console.log("MESSAGES ARRAY: ", messages);
 		if (!Array.isArray(messages) || messages.length === 0) {
 			return res.status(400).json({ error: true, message: "Invalid messages" });
 		}
 		await messageModel.deleteMany({ _id: { $in: messages } });
+
+		res
+			.status(200)
+			.json({ success: true, message: "Messages deleted successfully" });
 	} catch (error) {
-		console.log(err);
+		console.log(error);
+		res.status(500).json({ error: true, message: "Internal server error" });
+	}
+});
+
+// END POINT TO GET THE REQUESTS THAT ARE BEING SENT FROM PARTICULAR USER!
+app.get("/friends/requests-sent/:userId", async (req, res) => {
+	try {
+		const { userId } = req.params;
+
+		const user = await User.findById(userId)
+			.populate("setRequests", "name email image")
+			.lean();
+		const sentRequests = user.setFriends;
+
+		res.status(200).json({ success: true, sentRequests });
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ error: true, message: "Internal server error" });
+	}
+});
+
+// ENDPOINT TO CHECK USER FRIENDS !!
+app.get("/friends/userId:", async (req, res) => {
+	try {
+		const { userId } = req.params;
+		const some = await User.findById(userId).populate("friends");
+
+		res.status(200).json({ success: true, userFriendIds: some.friends });
+	} catch (error) {
+		console.log(error);
 		res.status(500).json({ error: true, message: "Internal server error" });
 	}
 });

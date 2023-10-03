@@ -8,7 +8,13 @@ import {
 	TextInput,
 	View,
 } from "react-native";
-import React, { useContext, useLayoutEffect, useState, useEffect } from "react";
+import React, {
+	useContext,
+	useLayoutEffect,
+	useState,
+	useEffect,
+	useRef,
+} from "react";
 import { Entypo } from "@expo/vector-icons";
 import { Feather } from "@expo/vector-icons";
 import EmojiSelector from "react-native-emoji-selector";
@@ -17,8 +23,8 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import axios from "axios";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { FontAwesome } from '@expo/vector-icons';
-import { MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function MessageScreen() {
 	const [showEmoji, setShowEmoji] = useState(false);
@@ -31,6 +37,21 @@ export default function MessageScreen() {
 	const { recepientId } = route.params;
 	const navigation = useNavigation();
 	const [recepientData, setRecepientData] = useState(null);
+	const scrollViewRef = useRef(null);
+
+	useEffect(() => {
+		scrollBottom();
+	}, []);
+
+	const scrollBottom = () => {
+		if (scrollViewRef.current) {
+			scrollViewRef.current.scrollToEnd({ animated: false });
+		}
+	};
+
+	const handleSize = () => {
+		scrollBottom();
+	};
 
 	// HANDLE SELECT MESSAGES!
 	const handleSelectMessage = (message) => {
@@ -72,7 +93,7 @@ export default function MessageScreen() {
 					"http://192.168.244.130:8080/user/" + recepientId
 				);
 
-				console.log(response.data);
+				console.log("RECEPIENT DATA-> ", response.data);
 
 				setRecepientData(response.data.recepientId);
 			} catch (error) {
@@ -136,42 +157,52 @@ export default function MessageScreen() {
 						color="black"
 					/>
 
-					{selectedMessages.length === 0 ? (
+					{selectedMessages.length > 0 ? (
 						<View>
 							<Text style={{ fontSize: 16, fontWeight: "600" }}>
 								{selectedMessages?.length}
 							</Text>
 						</View>
-					) : (<View style={{ flexDirection: "row", alignItems: "center" }}>
-					<Image
-						source={{ uri: recepientData?.image }}
-						style={{
-							width: 30,
-							height: 30,
-							borderRadius: 15,
-							resizeMode: "cover",
-						}}
-					/>
-					<Text style={{ marginLeft: 5, fontSize: 15, fontWeight: "bold" }}>
-						{recepientData?.name}
-					</Text>
-				</View>)}
+					) : (
+						<View style={{ flexDirection: "row", alignItems: "center" }}>
+							<Image
+								source={{
+									uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTam7dK4a6nCf6yhn8M0RPFBa1yIbNrD_9EUJ3NNEk7-o0KGCIZ",
+								}}
+								style={{
+									width: 30,
+									height: 30,
+									borderRadius: 15,
+									resizeMode: "cover",
+								}}
+							/>
+							<Text style={{ marginLeft: 5, fontSize: 15, fontWeight: "bold" }}>
+								{recepientData?.name}
+							</Text>
+						</View>
+					)}
 				</View>
-					
 			),
-			headerLeft: () =>
+			headerRight: () =>
 				selectedMessages.length > 0 ? (
 					<>
-						<View style={{flexDirection:'row',alignItems:'center',gap:9}}>
+						<View
+							style={{ flexDirection: "row", alignItems: "center", gap: 9 }}
+						>
 							<Ionicons name="md-arrow-redo-sharp" size={24} color="black" />
 							<Ionicons name="md-arrow-undo" size={24} color="black" />
 							<FontAwesome name="star" size={24} color="black" />
-							<MaterialIcons name="delete" size={24} color="black" />
+							<MaterialIcons
+								onPress={deleteMessages}
+								name="delete"
+								size={24}
+								color="black"
+							/>
 						</View>
 					</>
 				) : null,
 		});
-	}, [recepientData,selectedMessages]);
+	}, [recepientData, selectedMessages]);
 
 	const formatTime = (time) => {
 		const options = { hours: "numeric", minutes: "numeric" };
@@ -196,9 +227,38 @@ export default function MessageScreen() {
 		}
 	};
 
+	// HANDLE DELETE MESSAGES!
+	const deleteMessages = async () => {
+		try {
+			const response = await axios.post(
+				"http://192.168.244.130:8080/deleteMessages",
+				{ messages: selectedMessages }
+			);
+
+			if (response?.data?.success) {
+				// setMessages({
+				// 	...messages.filter(
+				// 		(m, i) => !selectedMessages.includes(m._id)
+				// 	),
+				// });
+				fetchMessages();
+			}
+
+			console.log("DELETED RESPONSE!", response.data);
+		} catch (error) {
+			console.log("SOME ERROR WHILE DELETING MESSAGES!", error.message);
+		}
+
+		// IF RESPONSE WAS SUCCESSFUL REMOVE THAT MESSAGE FROM MESSAGES ARRAY !!
+	};
+
 	return (
 		<KeyboardAvoidingView style={{ flex: 1, backgroundColor: "#F0F0F0" }}>
-			<ScrollView>
+			<ScrollView
+				ref={scrollViewRef}
+				contentContainerStyle={{ flexGrow: 1 }}
+				onContentSizeChange={handleSize}
+			>
 				{messages.length > 0 &&
 					messages.map((item, index) => {
 						if (item.messageType === "text") {
@@ -225,10 +285,15 @@ export default function MessageScreen() {
 													margin: 10,
 													backgroundColor: "white",
 											  },
-											  isSelected && {width:'100%',backgroundColor:'#F0FFFF'}
+										isSelected && { width: "100%", backgroundColor: "#F0FFFF" },
 									]}
 								>
-									<Text style={{ fontSize: 13, textAlign: isSelected ? 'right' : 'left' }}>
+									<Text
+										style={{
+											fontSize: 13,
+											textAlign: isSelected ? "right" : "left",
+										}}
+									>
 										{item?.messageText}
 									</Text>
 									<Text
@@ -277,7 +342,9 @@ export default function MessageScreen() {
 								>
 									<View>
 										<Image
-											source={{ uri: selectedImage }}
+											source={{
+												uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTam7dK4a6nCf6yhn8M0RPFBa1yIbNrD_9EUJ3NNEk7-o0KGCIZ",
+											}}
 											style={{ width: 200, height: 200, borderRadius: 7 }}
 										/>
 										<Text

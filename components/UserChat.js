@@ -1,9 +1,51 @@
 import { Image, StyleSheet, Text, View, Pressable } from "react-native";
-import React from "react";
+import React, { useContext, useEffect } from "react";
 import { useNavigation } from "@react-navigation/native";
+import { UserType } from "../UserContext";
+import axios from "axios";
 
 export default function UserChat({ user }) {
 	const navigation = useNavigation();
+
+	const { userId, setUserId } = useContext(UserType);
+	const [messages, setMessages] = React.useState([]);
+
+	const fetchMessages = async () => {
+		try {
+			const response = await axios.get(
+				"http://192.168.244.130:8080/messages/" + userId + "/" + user._id
+			);
+
+			setMessages(response.data.messages);
+
+			console.log("MESSAGES", response.data);
+		} catch (error) {
+			console.log(error);
+		}
+	};
+
+	// FETCH MESSAGES!
+	useEffect(() => {
+		fetchMessages();
+	}, []);
+
+	// GET LAST MESSAGES!
+	const getLastMessage = () => {
+		const userMessages = messages.filter(
+			(message) => message.messageType === "text"
+		);
+
+		const n = userMessages.length;
+
+		return userMessages[n - 1];
+	};
+
+	const formatTime = (time) => {
+		const options = { hours: "numeric", minutes: "numeric" };
+		return new Date(time).toLocaleTimeString("en-US", options);
+	};
+
+	const lastMessage = getLastMessage();
 
 	return (
 		<Pressable
@@ -26,15 +68,20 @@ export default function UserChat({ user }) {
 			/>
 			<View style={{ flex: 1 }}>
 				<Text style={{ fontSize: 15, fontWeight: "800" }}>{user?.name}</Text>
-				<Text style={{ marginTop: 3, color: "gray", fontWeight: "500" }}>
-					last message comes here
-				</Text>
+
+				{lastMessage?.messageText && (
+					<Text style={{ marginTop: 3, color: "gray", fontWeight: "500" }}>
+						{lastMessage?.messageText}
+					</Text>
+				)}
 			</View>
 
 			<View>
-				<Text style={{ fontSize: 11, fontWeight: "400", color: "#585858" }}>
-					3:00 am
-				</Text>
+				{lastMessage?.messageText && (
+					<Text style={{ fontSize: 11, fontWeight: "400", color: "#585858" }}>
+						{formatTime(lastMessage?.createdAt)}
+					</Text>
+				)}
 			</View>
 		</Pressable>
 	);

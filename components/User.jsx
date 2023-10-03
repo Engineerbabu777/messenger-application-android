@@ -5,21 +5,60 @@ import axios from "axios";
 
 export default function User({ user }) {
 	const { userId, setUserId } = useContext(UserType);
+	const [requestSent, setRequestSent] = useState([]);
+	const [friends, setFriends] = useState([]);
+	const [friendRequests, setFriendRequests] = useState([]);
+
+	useEffect(() => {
+		const fetchFriendRequests = async () => {
+			try {
+				const response = await axios.get(
+					"http://192.168.99.146:8080/friends/request-sent/" + userId
+				);
+				if(response.data.success){
+					setRequestSent(response.data.sentRequests);
+				}
+
+				console.log("SENT FRIEND REQUESTS-> ", response.data.sentRequests);
+			} catch (error) {
+				console.log("ERROR WHILE SENDING REQUEST-> ", error);
+			}
+		};
+
+		fetchFriendRequests();
+	}, []);
+
+	useEffect(() => {
+		const fetchFriends = async () => {
+			try {
+				const response = await axios.get(
+					"http://192.168.99.146:8080/friends/" + userId
+				);
+
+				if(response.data.success){
+					setFriends(response.data.userFriendIds);
+				}
+
+				console.log("SENT FRIEND REQUESTS-> ", response.data.userFriendIds);
+			} catch (error) {
+				console.log("ERROR WHILE SENDING REQUEST-> ", error);
+			}
+		};
+
+		fetchFriends();
+	}, []);
 
 	const sentRequest = async (selectedUserId) => {
+		try {
+			const response = await axios.post(
+				"http://192.168.99.146:8080/send-request",
+				{ selectedUserId, currentUserId: userId }
+			);
 
-        try{
-            const response = await axios.post(
-                "http://192.168.99.146:8080/send-request",
-                { selectedUserId, currentUserId: userId }
-            );
-
-            console.log(response.data);
-
-        } catch(err){
-            console.log('ERROR WHILE SENDING REQUEST-> ',err);
-        }
-        
+			console.log(response.data);
+		} catch (err) {
+			console.log("ERROR WHILE SENDING REQUEST-> ", err);
+		}
 	};
 
 	return (
